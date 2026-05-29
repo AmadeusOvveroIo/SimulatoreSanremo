@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simulatore Festival di Sanremo - V4</title>
+    <style>
+      :root {
+        --bg-color: #0b1325;
+        --gold: #d4af37;
+        --gold-light: #f3e5ab;
+        --text-main: #ffffff;
+        --panel-bg: rgba(255, 255, 255, 0.05);
+        --border-glow: 0 0 10px rgba(212, 175, 55, 0.5);
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        margin: 0;
+        padding: 20px;
+        background-image: radial-gradient(circle at top, #1a2a44, #0b1325);
+        min-height: 100vh;
+      }
+
+      h1,
+      h2,
+      h3 {
+        text-align: center;
+        color: var(--gold);
+        text-transform: uppercase;
+        letter-spacing: 2px;
+      }
+
+      h1 {
+        font-size: 2.5em;
+        text-shadow: var(--border-glow);
+        margin-bottom: 5px;
+      }
+
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+        background: var(--panel-bg);
+        border: 1px solid var(--gold);
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      }
+
+      .screen {
+        display: none;
+      }
+
+      .screen.active {
+        display: block;
+        animation: fadeIn 0.5s ease-in;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+
+      th,
+      td {
+        padding: 10px;
+        text-align: center;
+        border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+      }
+
+      th {
+        color: var(--gold-light);
+        font-weight: 600;
+        background: rgba(0, 0, 0, 0.2);
+      }
+
+      .stats-table th {
+        font-size: 0.85em;
+        text-transform: uppercase;
+      }
+
+      .stats-table tr:hover {
+        background: rgba(215, 175, 55, 0.1);
+      }
+
+      input[type="text"],
+      input[type="number"] {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--gold);
+        color: white;
+        padding: 8px;
+        border-radius: 4px;
+        width: 80px;
+        text-align: center;
+      }
+
+      input[type="text"] {
+        width: 200px;
+        text-align: left;
+      }
+
+      button {
+        background: linear-gradient(135deg, #d4af37, #aa8529);
+        color: #000;
+        border: none;
+        padding: 10px 20px;
+        font-size: 1em;
+        font-weight: bold;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-transform: uppercase;
+        margin: 10px 5px;
+      }
+
+      button:hover {
+        transform: scale(1.05);
+        box-shadow: var(--border-glow);
+      }
+
+      button:disabled {
+        background: #555;
+        color: #888;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .btn-small {
+        padding: 5px 10px;
+        font-size: 0.8em;
+      }
+
+      .controls {
+        text-align: center;
+        margin-top: 20px;
+      }
+
+      .ranking-list {
+        list-style: none;
+        padding: 0;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      .ranking-item {
+        background: rgba(0, 0, 0, 0.5);
+        margin: 10px 0;
+        padding: 15px;
+        border-left: 5px solid var(--gold);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 1.2em;
+      }
+
+      .ranking-item.top5-gold {
+        background: rgba(212, 175, 55, 0.2);
+        border-left: 5px solid #fff;
+        font-weight: bold;
+      }
+
+      .position {
+        font-size: 1.5em;
+        color: var(--gold);
+        width: 40px;
+      }
+
+      .scaletta-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 10px;
+        margin: 20px 0;
+        padding: 15px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 5px;
+      }
+
+      .scaletta-item {
+        padding: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(212, 175, 55, 0.2);
+        border-radius: 4px;
+        font-size: 0.95em;
+      }
+
+      #log {
+        margin-top: 20px;
+        padding: 15px;
+        background: rgba(0, 0, 0, 0.8);
+        border: 1px dashed var(--gold);
+        height: 100px;
+        overflow-y: auto;
+        font-family: monospace;
+        color: #aaa;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>76° Festival di Sanremo</h1>
+    <h3 style="margin-top: 0; color: #aaa; font-size: 1em">
+      Simulatore Direzione Artistica
+    </h3>
+
+    <div class="container">
+      <div id="screen-setup" class="screen active">
+        <h2>Gestione Artisti e Quote</h2>
+        <p style="text-align: center">
+          Inserisci gli artisti e le quote di scommessa. Minimo 20 artisti in
+          gara.
+        </p>
+
+        <div class="controls">
+          <button onclick="addArtistRow()">+ Aggiungi Artista</button>
+          <button onclick="copyGeneraleOdds()">Copia Generale su Tutte</button>
+        </div>
+
+        <table id="setup-table">
+          <thead>
+            <tr>
+              <th>Nome Artista</th>
+              <th>Quota Generale</th>
+              <th>Quota Sala Stampa</th>
+              <th>Quota Radio</th>
+              <th>Quota Televoto</th>
+              <th>Azioni</th>
+            </tr>
+          </thead>
+          <tbody id="setup-tbody"></tbody>
+        </table>
+
+        <div class="controls">
+          <button
+            id="btn-start"
+            onclick="startSimulation()"
+            style="font-size: 1.2em; padding: 15px 30px"
+          >
+            Inizia il Festival
+          </button>
+        </div>
+      </div>
+
+      <div id="screen-sim" class="screen">
+        <h2 id="serata-title">Prima Serata</h2>
+        <p id="serata-desc" style="text-align: center"></p>
+
+        <div id="scaletta-section">
+          <h3>📋 Ordine di Uscita Ufficiale</h3>
+          <div class="scaletta-grid" id="scaletta-container"></div>
+        </div>
+
+        <div class="controls">
+          <button id="btn-sim-serata" onclick="simulateCurrentSerata()">
+            Chiedi il Verdetto della Giuria
+          </button>
+          <button
+            id="btn-next-serata"
+            onclick="nextSerata()"
+            style="display: none"
+          >
+            Vai alla Serata Successiva
+          </button>
+        </div>
+
+        <div id="serata-results" style="display: none">
+          <h3>Top 5 della Serata (Ordine Sparso)</h3>
+          <ul class="ranking-list" id="serata-top5"></ul>
+        </div>
+      </div>
+
+      <div id="screen-finale-1" class="screen">
+        <h2>La Finale - Classifica Generale</h2>
+        <p style="text-align: center">
+          Media delle serate precedenti + voto finale. Scopriamo chi accede alla
+          Top 5.
+        </p>
+
+        <div class="controls">
+          <button id="btn-svela" onclick="svelaPosizione()">
+            Svela Prossima Posizione
+          </button>
+          <button id="btn-go-top5" onclick="goToTop5()" style="display: none">
+            Vai alla Finalissima (Top 5)
+          </button>
+        </div>
+
+        <ul class="ranking-list" id="classifica-finale"></ul>
+      </div>
+
+      <div id="screen-finale-2" class="screen">
+        <h2>Finalissima a 5</h2>
+        <p style="text-align: center">
+          Voti azzerati. Nuovissima votazione: Televoto 34%, Sala Stampa 33%,
+          Radio 33%.
+        </p>
+
+        <div class="controls">
+          <button id="btn-calc-top5" onclick="calculateTop5Votes()">
+            Avvia Votazione Segreta
+          </button>
+          <button
+            id="btn-svela-top5"
+            onclick="svelaPosizioneTop5()"
+            style="display: none"
+          >
+            Svela Prossima Posizione (dal 5° posto)
+          </button>
+        </div>
+
+        <div id="top5-spoglio-section" style="margin-top: 20px">
+          <ul class="ranking-list" id="top5-finale-list"></ul>
+        </div>
+
+        <div
+          id="winner-results"
+          style="display: none; text-align: center; margin-top: 30px"
+        >
+          <h1 style="color: white; font-size: 2em; letter-spacing: 4px">
+            🏆 VINCE IL FESTIVAL DI SANREMO 🏆
+          </h1>
+          <h1
+            id="winner-name"
+            style="
+              font-size: 4.5em;
+              text-shadow: 0 0 25px var(--gold);
+              margin: 20px 0;
+              color: var(--gold-light);
+            "
+          ></h1>
+
+          <div
+            id="global-stats-container"
+            style="margin-top: 40px; margin-bottom: 30px; text-align: left"
+          >
+            <h3>📊 Registro Voti Completo e Percentuali di tutte le Serate</h3>
+            <table class="stats-table">
+              <thead>
+                <tr>
+                  <th>Pos. Finale</th>
+                  <th>Artista</th>
+                  <th>Serata 1 (Stampa)</th>
+                  <th>Serata 2/3 (Tele+Radio)</th>
+                  <th>Serata 5 - F1 (Varie)</th>
+                  <th>Media Gen. (F1)</th>
+                  <th style="color: var(--gold)">Finalissima Top 5</th>
+                </tr>
+              </thead>
+              <tbody id="global-stats-tbody"></tbody>
+            </table>
+          </div>
+
+          <div class="controls">
+            <button
+              onclick="location.reload()"
+              style="font-size: 1.2em; padding: 12px 25px"
+            >
+              Inizia un nuovo Festival
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="log" style="display: none"></div>
+    </div>
+
+    <script {safe}>
+      let artists = [];
+      let currentSerata = 1;
+      let activeArtistsThisSerata = [];
+      let finalRanking = [];
+      let top5FinalRanking = [];
+      let svelaIndex = 0;
+      let svelaTop5Index = 4;
+
+      const defaultNames = [
+        "Annalisa",
+        "Mahmood",
+        "Angelina Mango",
+        "Geolier",
+        "Irama",
+        "Loredana Bertè",
+        "The Kolors",
+        "Ghali",
+        "Emma",
+        "Diodato",
+        "Fiorella Mannoia",
+        "Ricchi e Poveri",
+        "Alessandra Amoroso",
+        "Gazzelle",
+        "Negramaro",
+        "Mr. Rain",
+        "Rose Villain",
+        "Dargen D'Amico",
+        "Alfa",
+        "Il Volo",
+      ];
+
+      window.onload = () => {
+        defaultNames.forEach((name, i) => {
+          let baseOdd = (2.0 + i * 1.5 + Math.random() * 2).toFixed(2);
+          addArtistRow(name, baseOdd, baseOdd, baseOdd, baseOdd);
+        });
+        checkStartButton();
+      };
+
+      function addArtistRow(name = "", gen = "", st = "", ra = "", te = "") {
+        const tbody = document.getElementById("setup-tbody");
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+                <td><input type="text" class="inp-name" value="${name}" placeholder="Nome"></td>
+                <td><input type="number" class="inp-gen" value="${gen}" step="0.5" min="1.01"></td>
+                <td><input type="number" class="inp-st" value="${st}" step="0.5" min="1.01"></td>
+                <td><input type="number" class="inp-ra" value="${ra}" step="0.5" min="1.01"></td>
+                <td><input type="number" class="inp-te" value="${te}" step="0.5" min="1.01"></td>
+                <td><button class="btn-small" onclick="this.closest('tr').remove(); checkStartButton();">X</button></td>
+            `;
+        tbody.appendChild(tr);
+        checkStartButton();
+      }
+
+      function copyGeneraleOdds() {
+        const rows = document.querySelectorAll("#setup-tbody tr");
+        rows.forEach((row) => {
+          const genVal = row.querySelector(".inp-gen").value;
+          if (genVal) {
+            row.querySelector(".inp-st").value = genVal;
+            row.querySelector(".inp-ra").value = genVal;
+            row.querySelector(".inp-te").value = genVal;
+          }
+        });
+      }
+
+      function checkStartButton() {
+        const rows = document.querySelectorAll("#setup-tbody tr");
+        document.getElementById("btn-start").disabled = rows.length < 20;
+      }
+
+      function calculateVotes(artistList, juryKey, totalWeight = 1.0) {
+        let totalProb = 0;
+        artistList.forEach((a) => {
+          let baseProb = 1 / parseFloat(a.odds[juryKey]);
+          let noise = 1 + (Math.random() * 0.3 - 0.15);
+          a._tempProb = baseProb * noise;
+          totalProb += a._tempProb;
+        });
+
+        artistList.forEach((a) => {
+          let percentage = (a._tempProb / totalProb) * 100 * totalWeight;
+          a.tempVotes = (a.tempVotes || 0) + percentage;
+        });
+      }
+
+      function switchScreen(screenId) {
+        document
+          .querySelectorAll(".screen")
+          .forEach((s) => s.classList.remove("active"));
+        document.getElementById(screenId).classList.add("active");
+      }
+
+      function logMsg(msg) {
+        const log = document.getElementById("log");
+        log.style.display = "block";
+        log.innerHTML += `<div>${msg}</div>`;
+        log.scrollTop = log.scrollHeight;
+      }
+
+      function startSimulation() {
+        const rows = document.querySelectorAll("#setup-tbody tr");
+        artists = [];
+        let valid = true;
+
+        rows.forEach((row, index) => {
+          const name = row.querySelector(".inp-name").value;
+          const gen = row.querySelector(".inp-gen").value;
+          const st = row.querySelector(".inp-st").value;
+          const ra = row.querySelector(".inp-ra").value;
+          const te = row.querySelector(".inp-te").value;
+
+          if (!name || !gen || !st || !ra || !te) valid = false;
+
+          artists.push({
+            id: index,
+            name: name,
+            odds: { gen: gen, st: st, ra: ra, te: te },
+            scores: { s1: 0, s23: 0, s5: 0, total: 0, top5: 0 },
+          });
+        });
+
+        if (!valid || artists.length < 20) {
+          alert("Compila tutti i campi. Minimo 20 artisti.");
+          return;
+        }
+
+        artists.sort(() => Math.random() - 0.5);
+        switchScreen("screen-sim");
+        generateScaletta();
+      }
+
+      function generateScaletta() {
+        document.getElementById("btn-sim-serata").style.display =
+          "inline-block";
+        document.getElementById("btn-next-serata").style.display = "none";
+        document.getElementById("serata-results").style.display = "none";
+
+        const container = document.getElementById("scaletta-container");
+        container.innerHTML = "";
+
+        if (currentSerata === 1) {
+          document.getElementById("serata-title").innerText = "Prima Serata";
+          document.getElementById("serata-desc").innerText =
+            "Tutti i Big cantano stasera. Vota la Sala Stampa (100%).";
+          activeArtistsThisSerata = [...artists].sort(
+            () => Math.random() - 0.5
+          );
+        } else if (currentSerata === 2) {
+          document.getElementById("serata-title").innerText = "Seconda Serata";
+          document.getElementById("serata-desc").innerText =
+            "Canta la prima metà degli artisti. Votano Televoto (50%) e Radio (50%).";
+          let halfIndex = Math.ceil(artists.length / 2);
+          activeArtistsThisSerata = artists
+            .slice(0, halfIndex)
+            .sort(() => Math.random() - 0.5);
+        } else if (currentSerata === 3) {
+          document.getElementById("serata-title").innerText = "Terza Serata";
+          document.getElementById("serata-desc").innerText =
+            "Canta la seconda metà degli artisti. Votano Televoto (50%) e Radio (50%).";
+          let halfIndex = Math.ceil(artists.length / 2);
+          activeArtistsThisSerata = artists
+            .slice(halfIndex)
+            .sort(() => Math.random() - 0.5);
+        }
+
+        activeArtistsThisSerata.forEach((artist, i) => {
+          container.innerHTML += `<div class="scaletta-item"><b>${i + 1}.</b> ${
+            artist.name
+          }</div>`;
+        });
+      }
+
+      function simulateCurrentSerata() {
+        document.getElementById("btn-sim-serata").style.display = "none";
+        document.getElementById("btn-next-serata").style.display =
+          "inline-block";
+        document.getElementById("serata-results").style.display = "block";
+
+        artists.forEach((a) => (a.tempVotes = 0));
+
+        if (currentSerata === 1) {
+          calculateVotes(activeArtistsThisSerata, "st", 1.0);
+          activeArtistsThisSerata.forEach((a) => (a.scores.s1 = a.tempVotes));
+        } else {
+          calculateVotes(activeArtistsThisSerata, "te", 0.5);
+          calculateVotes(activeArtistsThisSerata, "ra", 0.5);
+          activeArtistsThisSerata.forEach((a) => (a.scores.s23 = a.tempVotes));
+        }
+
+        let serataRank = [...activeArtistsThisSerata].sort(
+          (a, b) => b.tempVotes - a.tempVotes
+        );
+        let top5 = serataRank.slice(0, 5).sort(() => Math.random() - 0.5);
+
+        const ul = document.getElementById("serata-top5");
+        ul.innerHTML = "";
+        top5.forEach((a) => {
+          ul.innerHTML += `<li class="ranking-item"><span>${a.name}</span> <span style="font-size:0.8em; color:#aaa;">In Top 5</span></li>`;
+        });
+
+        logMsg(`Simulata serata ${currentSerata}.`);
+      }
+
+      function nextSerata() {
+        currentSerata++;
+        if (currentSerata <= 3) {
+          generateScaletta();
+        } else {
+          prepareFinale();
+        }
+      }
+
+      function prepareFinale() {
+        switchScreen("screen-finale-1");
+
+        artists.forEach((a) => (a.tempVotes = 0));
+        calculateVotes(artists, "te", 0.34);
+        calculateVotes(artists, "st", 0.33);
+        calculateVotes(artists, "ra", 0.33);
+
+        artists.forEach((a) => {
+          a.scores.s5 = a.tempVotes;
+          let s23Score = a.scores.s23 || 0;
+          a.scores.total = (a.scores.s1 + s23Score + a.scores.s5) / 3;
+        });
+
+        finalRanking = [...artists].sort(
+          (a, b) => b.scores.total - a.scores.total
+        );
+        svelaIndex = finalRanking.length - 1;
+      }
+
+      function svelaPosizione() {
+        if (svelaIndex >= 5) {
+          const artist = finalRanking[svelaIndex];
+          const ul = document.getElementById("classifica-finale");
+          const li = document.createElement("li");
+          li.className = "ranking-item";
+          li.innerHTML = `<span class="position">${
+            svelaIndex + 1
+          }°</span> <span>${artist.name}</span>`;
+          ul.prepend(li);
+
+          svelaIndex--;
+
+          if (svelaIndex === 4) {
+            document.getElementById("btn-svela").style.display = "none";
+            document.getElementById("btn-go-top5").style.display =
+              "inline-block";
+          }
+        }
+      }
+
+      function goToTop5() {
+        switchScreen("screen-finale-2");
+      }
+
+      function calculateTop5Votes() {
+        document.getElementById("btn-calc-top5").style.display = "none";
+        document.getElementById("btn-svela-top5").style.display =
+          "inline-block";
+
+        top5FinalRanking = finalRanking.slice(0, 5);
+
+        top5FinalRanking.forEach((a) => (a.tempVotes = 0));
+        calculateVotes(top5FinalRanking, "te", 0.34);
+        calculateVotes(top5FinalRanking, "st", 0.33);
+        calculateVotes(top5FinalRanking, "ra", 0.33);
+
+        top5FinalRanking.forEach((a) => (a.scores.top5 = a.tempVotes));
+        top5FinalRanking.sort((a, b) => b.tempVotes - a.tempVotes);
+        svelaTop5Index = 4;
+      }
+
+      function svelaPosizioneTop5() {
+        if (svelaTop5Index >= 1) {
+          const artist = top5FinalRanking[svelaTop5Index];
+          const ul = document.getElementById("top5-finale-list");
+          const li = document.createElement("li");
+          li.className = "ranking-item";
+          li.innerHTML = `<span class="position">${
+            svelaTop5Index + 1
+          }°</span> <span>${artist.name}</span>`;
+          ul.prepend(li);
+
+          svelaTop5Index--;
+        } else if (svelaTop5Index === 0) {
+          const winner = top5FinalRanking[0];
+          const ul = document.getElementById("top5-finale-list");
+          const li = document.createElement("li");
+          li.className = "ranking-item top5-gold";
+          li.innerHTML = `<span class="position">1°</span> <span>${winner.name}</span>`;
+          ul.prepend(li);
+
+          document.getElementById("btn-svela-top5").style.display = "none";
+          document.getElementById("winner-name").innerText = winner.name;
+          document.getElementById("winner-results").style.display = "block";
+
+          // AZIONE AUTOMATICA: Genera il registro completo delle percentuali adesso che è finita!
+          showFullStatsTable();
+          logMsg(`Proclamato il vincitore: ${winner.name}`);
+        }
+      }
+
+      // Genera e compila automaticamente il registro completo
+      function showFullStatsTable() {
+        const tbody = document.getElementById("global-stats-tbody");
+        tbody.innerHTML = "";
+
+        let absoluteFinal = [...top5FinalRanking, ...finalRanking.slice(5)];
+
+        absoluteFinal.forEach((artist, index) => {
+          let isTop5 = index < 5;
+          let s1Text = artist.scores.s1
+            ? artist.scores.s1.toFixed(2) + "%"
+            : "N.D.";
+          let s23Text = artist.scores.s23
+            ? artist.scores.s23.toFixed(2) + "%"
+            : "N.D.";
+          let s5Text = artist.scores.s5
+            ? artist.scores.s5.toFixed(2) + "%"
+            : "0.00%";
+          let totalText = artist.scores.total
+            ? artist.scores.total.toFixed(2) + "%"
+            : "0.00%";
+          let top5Text = isTop5 ? artist.scores.top5.toFixed(2) + "%" : "-";
+
+          let row = document.createElement("tr");
+          if (isTop5 && index === 0) row.style.color = "var(--gold-light)";
+
+          row.innerHTML = `
+                    <td><b>${index + 1}°</b></td>
+                    <td>${artist.name}</td>
+                    <td>${s1Text}</td>
+                    <td>${s23Text}</td>
+                    <td>${s5Text}</td>
+                    <td>${totalText}</td>
+                    <td style="font-weight:bold; color:${
+                      isTop5 ? "var(--gold)" : "#aaa"
+                    };">${top5Text}</td>
+                `;
+          tbody.appendChild(row);
+        });
+
+        // Fa scorrere la pagina in basso con un effetto fluido per far vedere i dati emersi
+        window.scrollTo({
+          top: document.body.scrollHeight,
+          behavior: "smooth",
+        });
+      }
+    </script>
+  </body>
+</html>
